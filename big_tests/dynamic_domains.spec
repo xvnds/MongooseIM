@@ -41,6 +41,8 @@
 
 {suites, "tests", extdisco_SUITE}.
 
+{suites, "tests", fast_SUITE}.
+
 {suites, "tests", gdpr_SUITE}.
 {skip_groups, "tests", gdpr_SUITE,
  [retrieve_personal_data_pubsub,

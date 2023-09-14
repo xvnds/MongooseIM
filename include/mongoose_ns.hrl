@@ -104,6 +104,8 @@
 -define(NS_RETRACT,             <<"urn:xmpp:message-retract:0">>).
 -define(NS_RETRACT_TOMBSTONE,   <<"urn:xmpp:message-retract:0#tombstone">>).
 
+-define(NS_FAST,                <<"urn:xmpp:fast:0">>).
+
 -define(JINGLE_NS, <<"urn:xmpp:jingle:1">>).
 
 %% Custom extension to accept stanza-ids as retraction IDs

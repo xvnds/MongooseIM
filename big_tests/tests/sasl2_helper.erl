@@ -18,10 +18,11 @@ ns() ->
 load_all_sasl2_modules(HostType) ->
     MemBackend = ct_helper:get_internal_database(),
     SMOpts = #{ack_freq => never, backend => MemBackend},
-    Modules = [{mod_bind2, default_mod_config(mod_bind2)},
-               {mod_sasl2, default_mod_config(mod_sasl2)},
-               {mod_csi, default_mod_config(mod_csi)},
-               {mod_carboncopy, default_mod_config(mod_carboncopy)},
+    Modules = [{mod_sasl2, config_parser_helper:default_mod_config(mod_sasl2)},
+               {mod_bind2, config_parser_helper:default_mod_config(mod_bind2)},
+               {mod_fast, config_parser_helper:default_mod_config(mod_fast)},
+               {mod_csi, config_parser_helper:default_mod_config(mod_csi)},
+               {mod_carboncopy, config_parser_helper:default_mod_config(mod_carboncopy)},
                {mod_stream_management, mod_config(mod_stream_management, SMOpts)}],
     dynamic_modules:ensure_modules(HostType, Modules).
 
