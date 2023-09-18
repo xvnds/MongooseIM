@@ -7,6 +7,7 @@
 
 -define(VALID_UUID_BUT_NOT_V4, <<"a55c8fde-2cef-0655-a55c-8fde2cefc655">>).
 -define(NS_SASL_2, <<"urn:xmpp:sasl:2">>).
+-define(NS_BIND_2, <<"urn:xmpp:bind:0">>).
 
 -type step(Config, Client, Data) :: fun((Config, Client, Data) -> {Client, Data}).
 -import(config_parser_helper, [mod_config/2, default_mod_config/1]).
@@ -132,12 +133,34 @@ plain_auth_user_agent_without_id(Config, Client, Data) ->
 plain_authentication(Config, Client, Data) ->
     plain_auth(Config, Client, Data, []).
 
-plain_auth(_Config, Client, Data, Extra) ->
+plain_auth(_Config, Client, Data, SaslExtraElems) ->
     InitEl = plain_auth_initial_response(Client),
-    Authenticate = auth_elem(<<"PLAIN">>, [InitEl | Extra]),
+    Authenticate = auth_elem(<<"PLAIN">>, [InitEl | SaslExtraElems]),
     escalus:send(Client, Authenticate),
     Answer = escalus_client:wait_for_stanza(Client),
     {Client, Data#{answer => Answer}}.
+
+plain_auth_bind(Config, Client, Data, BindElems, SaslExtraElems) ->
+    Mech = <<"PLAIN">>,
+    SaslPayload = plain_auth_payload(Client),
+    session_establish(Config, Client, Data, SaslPayload, Mech, BindElems, SaslExtraElems).
+
+session_establish(_Config, Client, Data, SaslPayload, Mech, BindElems, SaslExtraElems) ->
+    InitEl = initial_response_elem(SaslPayload),
+    BindEl = #xmlel{name = <<"bind">>,
+                  attrs = [{<<"xmlns">>, ?NS_BIND_2}],
+                  children = BindElems},
+    Authenticate = auth_elem(Mech, [InitEl, BindEl | SaslExtraElems]),
+    escalus:send(Client, Authenticate),
+    Answer = escalus_client:wait_for_stanza(Client),
+    Identifier = exml_query:path(Answer, [{element, <<"authorization-identifier">>}, cdata]),
+    #jid{resource = LResource} = jid:from_binary(Identifier),
+    {Client, Data#{answer => Answer, client_1_jid => Identifier, bind2_resource => LResource}}.
+
+start_peer(Config, Client, Data) ->
+    BobSpec = escalus_fresh:create_fresh_user(Config, bob),
+    {ok, Bob, _} = escalus_connection:start(BobSpec),
+    {Client, Data#{peer => Bob}}.
 
 scram_abort(_Config, Client,
             Data = #{client_state := ClientState3, challenge_stanza := ChallengeStanza}) ->
@@ -228,6 +251,11 @@ auth_elem(Mech, NS, Children) ->
     #xmlel{name = <<"authenticate">>,
            attrs = [{<<"xmlns">>, NS}, {<<"mechanism">>, Mech}],
            children = Children}.
+
+plain_auth_payload(#client{props = Props}) ->
+    Username = proplists:get_value(username, Props),
+    Password = proplists:get_value(password, Props),
+    <<0:8, Username/binary, 0:8, Password/binary>>.
 
 plain_auth_initial_response(#client{props = Props}) ->
     Username = proplists:get_value(username, Props),

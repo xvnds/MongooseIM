@@ -125,22 +125,19 @@ auth_and_bind_contains_client_tag(Config) ->
     ?assertMatch([Tag, _], ResourceParts).
 
 carbons_are_enabled_with_bind_inline_request(Config) ->
-    Steps = [start_new_user,
-             {?MODULE, start_peer},
+    Steps = [start_new_user, start_peer,
              {?MODULE, auth_and_bind_with_carbon_copies}, receive_features,
              {?MODULE, receive_message_carbon_arrives}, has_no_more_stanzas],
     sasl2_helper:apply_steps(Steps, Config).
 
 csi_is_active_with_bind_inline_request(Config) ->
-    Steps = [start_new_user,
-             {?MODULE, start_peer},
+    Steps = [start_new_user, start_peer,
              {?MODULE, auth_and_bind_with_csi_active}, receive_features,
              {?MODULE, inactive_csi_msg_wont_arrive}, has_no_more_stanzas],
     sasl2_helper:apply_steps(Steps, Config).
 
 csi_is_inactive_with_bind_inline_request(Config) ->
-    Steps = [start_new_user,
-             {?MODULE, start_peer},
+    Steps = [start_new_user, start_peer,
              {?MODULE, auth_and_bind_with_csi_inactive}, has_no_more_stanzas,
              {?MODULE, inactive_csi_msgs_do_not_arrive},
              {?MODULE, activate_csi}, receive_features,
@@ -148,8 +145,7 @@ csi_is_inactive_with_bind_inline_request(Config) ->
     sasl2_helper:apply_steps(Steps, Config).
 
 stream_resumption_enable_sm_on_bind(Config) ->
-    Steps = [start_new_user,
-             {?MODULE, start_peer},
+    Steps = [start_new_user, start_peer,
              {?MODULE, auth_and_bind_with_sm_enabled},
              receive_features, has_no_more_stanzas],
     #{answer := Success} = sasl2_helper:apply_steps(Steps, Config),
@@ -159,8 +155,7 @@ stream_resumption_enable_sm_on_bind(Config) ->
     ?assertNotEqual(undefined, Enabled).
 
 stream_resumption_enable_sm_on_bind_with_resume(Config) ->
-    Steps = [start_new_user,
-             {?MODULE, start_peer},
+    Steps = [start_new_user, start_peer,
              {?MODULE, auth_and_bind_with_sm_resume_enabled},
              receive_features, has_no_more_stanzas],
     #{answer := Success} = sasl2_helper:apply_steps(Steps, Config),
@@ -195,35 +190,37 @@ stream_resumption_overrides_bind_request(Config) ->
 
 %% Step helpers
 auth_and_bind(Config, Client, Data) ->
-    plain_auth(Config, Client, Data, [], []).
+    sasl2_helper:plain_auth_bind(Config, Client, Data, [], []).
 
 auth_and_bind_wrong_resource(Config, Client, Data) ->
     Tag = ?BAD_TAG,
-    plain_auth(Config, Client, Data#{tag => Tag}, [bind_tag(Tag)], []).
+    sasl2_helper:plain_auth_bind(Config, Client, Data#{tag => Tag}, [bind_tag(Tag)], []).
 
 auth_and_bind_with_user_agent_uuid(Config, Client, Data) ->
     Uuid = uuid:uuid_to_string(uuid:get_v4(), binary_standard),
-    plain_auth(Config, Client, Data#{uuid => Uuid}, [], [good_user_agent_elem(Uuid)]).
+    sasl2_helper:plain_auth_bind(
+      Config, Client, Data#{uuid => Uuid}, [], [good_user_agent_elem(Uuid)]).
 
 auth_and_bind_with_tag(Config, Client, Data) ->
     Tag = uuid:uuid_to_string(uuid:get_v4(), binary_standard),
-    plain_auth(Config, Client, Data#{tag => Tag}, [bind_tag(Tag)], []).
+    sasl2_helper:plain_auth_bind(Config, Client, Data#{tag => Tag}, [bind_tag(Tag)], []).
 
 auth_and_bind_with_resumption_unknown_smid(Config, Client, Data) ->
     Tag = uuid:uuid_to_string(uuid:get_v4(), binary_standard),
     Resume = escalus_stanza:resume(<<"123456">>, 1),
-    plain_auth(Config, Client, Data#{tag => Tag}, [bind_tag(Tag)], [Resume]).
+    sasl2_helper:plain_auth_bind(Config, Client, Data#{tag => Tag}, [bind_tag(Tag)], [Resume]).
 
 auth_and_bind_with_resumption(Config, Client, #{smid := SMID, texts := Texts} = Data) ->
     Tag = uuid:uuid_to_string(uuid:get_v4(), binary_standard),
     Resume = escalus_stanza:resume(SMID, 1),
-    {Client1, Data1} = plain_auth(Config, Client, Data#{tag => Tag}, [bind_tag(Tag)], [Resume]),
+    {Client1, Data1} = sasl2_helper:plain_auth_bind(
+                         Config, Client, Data#{tag => Tag}, [bind_tag(Tag)], [Resume]),
     Msgs = sm_helper:wait_for_messages(Client, Texts),
     {Client1, Data1#{sm_storage => Msgs}}.
 
 auth_and_bind_with_carbon_copies(Config, Client, #{spec := Spec} = Data) ->
     CarbonEnable = enable_carbons_el(),
-    {Client1, Data1} = plain_auth(Config, Client, Data, [CarbonEnable], []),
+    {Client1, Data1} = sasl2_helper:plain_auth_bind(Config, Client, Data, [CarbonEnable], []),
     Resource = <<"second_resource">>,
     {ok, Client2, _} = escalus_connection:start(
                          [{carbons, true}, {resource, Resource} | Spec]),
@@ -232,7 +229,7 @@ auth_and_bind_with_carbon_copies(Config, Client, #{spec := Spec} = Data) ->
 
 auth_and_bind_with_csi_active(Config, Client, Data) ->
     CsiActive = csi_helper:csi_stanza(<<"active">>),
-    plain_auth(Config, Client, Data, [CsiActive], []).
+    sasl2_helper:plain_auth_bind(Config, Client, Data, [CsiActive], []).
 
 inactive_csi_msg_wont_arrive(_Config, Client, #{peer := Bob} = Data) ->
     escalus_client:send(Bob, escalus_stanza:chat_to(Client, <<"hello 1">>)),
@@ -245,7 +242,7 @@ inactive_csi_msg_wont_arrive(_Config, Client, #{peer := Bob} = Data) ->
 
 auth_and_bind_with_csi_inactive(Config, Client, Data) ->
     CsiInactive = csi_helper:csi_stanza(<<"inactive">>),
-    plain_auth(Config, Client, Data, [CsiInactive], []).
+    sasl2_helper:plain_auth_bind(Config, Client, Data, [CsiInactive], []).
 
 inactive_csi_msgs_do_not_arrive(_Config, Client, #{peer := Bob} = Data) ->
     Msgs = csi_helper:given_messages_are_sent(Client, Bob, 2),
@@ -262,11 +259,11 @@ receive_csi_msgs(_Config, Client, #{msgs := Msgs} = Data) ->
 
 auth_and_bind_with_sm_enabled(Config, Client, Data) ->
     SmEnable = escalus_stanza:enable_sm(),
-    plain_auth(Config, Client, Data, [SmEnable], []).
+    sasl2_helper:plain_auth_bind(Config, Client, Data, [SmEnable], []).
 
 auth_and_bind_with_sm_resume_enabled(Config, Client, Data) ->
     SmEnable = escalus_stanza:enable_sm([{resume, true}]),
-    plain_auth(Config, Client, Data, [SmEnable], []).
+    sasl2_helper:plain_auth_bind(Config, Client, Data, [SmEnable], []).
 
 receive_message_carbon_arrives(
   _Config, Client1, #{client_1_jid := Jid1, client_2_jid := Jid2,
@@ -276,23 +273,6 @@ receive_message_carbon_arrives(
     escalus_client:send(Bob, escalus_stanza:chat_to(Jid2, <<"hello 2">>)),
     Answers2 = [ escalus_client:wait_for_stanza(C) || C <- [Client1, Client2]],
     {Client1, Data#{answers_1 => Answers1, answers_2 => Answers2}}.
-
-plain_auth(_Config, Client, Data, BindElems, Extra) ->
-    InitEl = sasl2_helper:plain_auth_initial_response(Client),
-    BindEl = #xmlel{name = <<"bind">>,
-                  attrs = [{<<"xmlns">>, ?NS_BIND_2}],
-                  children = BindElems},
-    Authenticate = auth_elem(<<"PLAIN">>, [InitEl, BindEl | Extra]),
-    escalus:send(Client, Authenticate),
-    Answer = escalus_client:wait_for_stanza(Client),
-    Identifier = exml_query:path(Answer, [{element, <<"authorization-identifier">>}, cdata]),
-    #jid{resource = LResource} = jid:from_binary(Identifier),
-    {Client, Data#{answer => Answer, client_1_jid => Identifier, bind2_resource => LResource}}.
-
-start_peer(Config, Client, Data) ->
-    BobSpec = escalus_fresh:create_fresh_user(Config, bob),
-    {ok, Bob, _} = escalus_connection:start(BobSpec),
-    {Client, Data#{peer => Bob}}.
 
 %% XML helpers
 auth_elem(Mech, Children) ->
