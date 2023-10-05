@@ -1,6 +1,8 @@
 -module(mongoose_lib).
 
 -export([log_if_backend_error/4]).
+%% Timestamp conversions
+-export([ts_to_rfc3339_bin/2, rfc3339_bin_to_ts/2]).
 %% Maps
 -export([maps_append/3]).
 -export([maps_foreach/2]).
@@ -57,6 +59,14 @@ log_if_backend_error(E, Module, Line, Args) ->
                  caller_module => Module, caller_line => Line,
                  reason => E, args => Args}),
     ok.
+
+-spec ts_to_rfc3339_bin(integer(), atom()) -> binary().
+ts_to_rfc3339_bin(TS, Unit) ->
+    list_to_binary(calendar:system_time_to_rfc3339(TS, [{offset, "Z"}, {unit, Unit}])).
+
+-spec rfc3339_bin_to_ts(binary(), atom()) -> integer().
+rfc3339_bin_to_ts(Bin, Unit) ->
+    calendar:rfc3339_to_system_time(binary_to_list(Bin), [{unit, Unit}]).
 
 %% ------------------------------------------------------------------
 %% Maps
