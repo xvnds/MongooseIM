@@ -20,7 +20,8 @@ load_all_sasl2_modules(HostType) ->
     SMOpts = #{ack_freq => never, backend => MemBackend},
     Modules = [{mod_sasl2, config_parser_helper:default_mod_config(mod_sasl2)},
                {mod_bind2, config_parser_helper:default_mod_config(mod_bind2)},
-               {mod_fast, config_parser_helper:default_mod_config(mod_fast)},
+               {mod_fast, config_parser_helper:mod_config(
+                            mod_fast, #{validity_period => timer:seconds(1), max_count => 1})},
                {mod_csi, config_parser_helper:default_mod_config(mod_csi)},
                {mod_carboncopy, config_parser_helper:default_mod_config(mod_carboncopy)},
                {mod_stream_management, mod_config(mod_stream_management, SMOpts)}],
@@ -39,6 +40,10 @@ apply_steps([{Module, Step} | MoreSteps], Config, Client, Data) ->
 apply_steps([Step | MoreSteps], Config, Client, Data) ->
     {LastClient, LastData} = ?MODULE:Step(Config, Client, Data),
     apply_steps(MoreSteps, Config, LastClient, LastData).
+
+disconnect(_Config, Client, Data) ->
+    escalus_connection:stop(Client),
+    {undefined, Data}.
 
 connect_non_tls_user(Config, _, Data) ->
     Spec = escalus_fresh:freshen_spec(Config, alice),

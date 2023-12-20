@@ -849,6 +849,12 @@ default_mod_config(mod_disco) ->
       users_can_see_hidden_services => true, iqdisc => one_queue};
 default_mod_config(mod_extdisco) ->
     #{iqdisc => no_queue, service => []};
+default_mod_config(mod_fast) ->
+    #{validity_period => 7 * timer:hours(24),
+      max_count => 256,
+      entropy => 16,
+      hash => [<<"SHA">>, <<"SHA-224">>, <<"SHA-256">>, <<"SHA-384">>, <<"SHA-512">>,
+               <<"SHA3-224">>, <<"SHA3-256">>, <<"SHA3-384">>, <<"SHA3-512">>]};
 default_mod_config(mod_global_distrib) ->
     #{message_ttl => 4,
       hosts_refresh_interval => 3000,

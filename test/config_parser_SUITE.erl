@@ -190,6 +190,7 @@ groups() ->
                             mod_event_pusher_http,
                             mod_event_pusher_rabbit,
                             mod_extdisco,
+                            mod_fast,
                             mod_http_upload,
                             mod_http_upload_s3,
                             mod_jingle_sip,
@@ -1544,6 +1545,21 @@ mod_extdisco(_Config) ->
     ?errh(T(RequiredOpts#{<<"transport">> => <<>>})),
     ?errh(T(RequiredOpts#{<<"username">> => <<>>})),
     ?errh(T(RequiredOpts#{<<"password">> => <<>>})).
+
+mod_fast(_Config) ->
+    check_module_defaults(mod_fast),
+    P = [modules, mod_fast],
+    T = fun(Opts) -> #{<<"modules">> => #{<<"mod_fast">> => Opts}} end,
+    ?cfgh(P ++ [entropy], 100, T(#{<<"entropy">> => 100})),
+    ?cfgh(P ++ [max_count], 100, T(#{<<"max_count">> => 100})),
+    ?cfgh(P ++ [hash], [<<"SHA">>, <<"SHA-256">>], T(#{<<"hash">> => [<<"sha">>, <<"sha256">>]})),
+    ?cfgh(P ++ [validity_period], timer:minutes(13),
+          T(#{<<"validity_period">> => #{<<"value">> => 13, <<"unit">> => <<"minutes">>}})),
+    ?errh(T(#{<<"validity_period">> => #{<<"unit">> => <<"days">>}})),
+    ?errh(T(#{<<"hash">> => []})),
+    ?errh(T(#{<<"hash">> => [<<"sha">>, <<"sha">>]})),
+    ?errh(T(#{<<"entropy">> => -1})),
+    ?errh(T(#{<<"max_count">> => -1})).
 
 mod_inbox(_Config) ->
     check_module_defaults(mod_inbox),

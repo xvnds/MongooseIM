@@ -190,6 +190,7 @@ handle_auth_start(C2SData, C2SState, El, SaslAcc, Retries) ->
             OriginalStateData = #{c2s_state => C2SState, c2s_data => C2SData},
             SaslAcc1 = mongoose_c2s_acc:to_acc(SaslAcc, state_mod, {?MODULE, ModState}),
             SaslAcc2 = mongoose_hooks:sasl2_start(HostType, SaslAcc1, El),
+            %% TODO turn it into a hook where this is just another handler?
             SaslResult = mongoose_c2s_sasl:start(C2SData, SaslAcc2, Mech, ClientIn),
             handle_sasl_step(SaslResult, OriginalStateData, Retries)
     end.

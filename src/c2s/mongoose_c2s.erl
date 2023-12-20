@@ -1102,6 +1102,11 @@ create_data(#{host_type := HostType, jid := Jid}) ->
 get_auth_mechs(#c2s_data{host_type = HostType} = StateData) ->
     [M || M <- cyrsasl:listmech(HostType), filter_mechanism(StateData, M)].
 
+-spec store_auth_mechs(data()) -> [mongoose_c2s_sasl:mechanism()].
+store_auth_mechs(#c2s_data{host_type = HostType} = StateData) ->
+    [M || M <- cyrsasl:listmech(HostType), filter_mechanism(StateData, M)],
+    StateData.
+
 -spec filter_mechanism(data(), binary()) -> boolean().
 filter_mechanism(#c2s_data{socket = Socket}, <<"SCRAM-SHA-1-PLUS">>) ->
     mongoose_c2s_socket:is_channel_binding_supported(Socket);
