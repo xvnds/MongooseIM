@@ -57,6 +57,7 @@ all() ->
 
 groups() ->
     [
+        {verify_peer, [], [verify_peer_disconnects_when_client_has_no_cert]},
         {starttls_disabled, [parallel], [correct_features_are_advertised_for_disabled_starttls,
                                          starttls_should_fail_when_disabled]},
         {starttls_optional, [parallel], [bad_xml,
@@ -92,10 +93,11 @@ groups() ->
 
 tls_groups()->
     [
-        {group, starttls_disabled},
-        {group, starttls_optional},
-        {group, starttls_required},
-        {group, tls}
+        {group, verify_peer}
+%%        {group, starttls_disabled},
+%%        {group, starttls_optional},
+%%        {group, starttls_required}
+%%        {group, tls}
     ].
 
 auth_bind_pipelined_cases() ->
@@ -175,6 +177,10 @@ init_per_group(fast_tls, Config)->
 init_per_group(proxy_protocol, Config) ->
     configure_c2s_listener(Config, #{proxy_protocol => true}),
     Config;
+%%%%
+%%init_per_group(verify_peer, Config) ->
+%%    configure_c2s_listener(Config, #{tls => tls_opts(starttls_required, Config)}),
+%%    Config;
 init_per_group(_, Config) ->
     Config.
 
@@ -184,6 +190,9 @@ end_per_group(session_replacement, Config) ->
 end_per_group(_, Config) ->
     Config.
 
+init_per_testcase(verify_peer_disconnects_when_client_has_no_cert, Config) ->
+
+    Config;
 init_per_testcase(close_connection_if_service_type_is_hidden = CN, Config) ->
     Config1 = mongoose_helper:backup_and_set_config_option(Config, hide_service_name, true),
     escalus:init_per_testcase(CN, Config1);
@@ -214,6 +223,31 @@ end_per_testcase(CaseName, Config) ->
 %%--------------------------------------------------------------------
 %% Tests
 %%--------------------------------------------------------------------
+
+verify_peer_disconnects_when_client_has_no_cert(Config) ->
+    ServerTLSOpts = tls_opts(starttls_required, Config),
+    ct:pal("ServerTLSOpts:\n~p\n", [ServerTLSOpts]),
+    configure_c2s_listener(Config, #{tls => ServerTLSOpts}),
+
+    process_flag(trap_exit, true),
+    %% GIVEN
+    UserSpec0 = escalus_users:get_userspec(Config, ?SECURE_USER),
+    SSL_opts = [{verify, verify_none}],
+    UserSpec = [{ssl_opts, SSL_opts}|UserSpec0],
+    ct:pal("xxx UserSpec:\n~p\n", [UserSpec]),
+    ct:pal("xxx Config:\n~p\n", [Config]),
+    %% WHEN
+    try 
+        escalus_connection:start(UserSpec) of
+    %% THEN
+        Result ->
+            ct:pal("xxx client_connected escalus:connection:start:\n~p\n", [Result]),
+            error({client_connected, Config})
+    catch
+        C:E ->
+            ct:pal("xxx connection error:\n~p\n", [{C, E}]),
+            error({C, E, Config})
+    end.
 
 bad_xml(Config) ->
     %% given
