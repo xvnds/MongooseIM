@@ -113,6 +113,7 @@
 {suites, "tests", last_SUITE}.
 {suites, "tests", metrics_api_SUITE}.
 {suites, "tests", persistent_cluster_id_SUITE}.
+{suites, "tests", s2s_SUITE}.
 {suites, "tests", sasl_external_SUITE}.
 {suites, "tests", service_domain_db_SUITE}.
 

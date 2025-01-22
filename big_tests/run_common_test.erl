@@ -471,6 +471,7 @@ get_hosts_to_enable_preset(Props) ->
 
 should_enable_preset(mim) -> true;
 should_enable_preset(reg) -> true;
+should_enable_preset(fed) -> true;
 should_enable_preset(_) -> false.
 
 get_all_hosts(Props) ->
