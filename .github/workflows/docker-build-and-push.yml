@@ -27,6 +27,6 @@ jobs:
       - name: Push the Docker image to GHCR
         run: |
           REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          IMAGE_NAME="ghcr.io/$REPO_NAME/mongooseim:latest"
+          IMAGE_NAME="ghcr.io/$REPO_NAME:latest"
           docker tag mongooseim $IMAGE_NAME
           docker push $IMAGE_NAME
