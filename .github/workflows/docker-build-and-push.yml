@@ -24,11 +24,6 @@ jobs:
       - name: Build the Docker image
         run: ./tools/build-image.sh "https://github.com/${{ github.repository }}.git" dev
 
-      - name: Tag the image
-        run: |
-          IMAGE_NAME=ghcr.io/${{ github.repository }}/mongooseim:latest
-          docker tag mongooseim $IMAGE_NAME
-
       - name: Push the Docker image to GHCR
         run: |
           IMAGE_NAME="ghcr.io/${{ github.repository }}/mongooseim:latest"
